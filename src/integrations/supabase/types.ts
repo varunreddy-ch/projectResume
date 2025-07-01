@@ -9,13 +9,85 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      resume_usage: {
+        Row: {
+          count: number
+          created_at: string
+          date: string
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          date?: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          date?: string
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_resume_usage: {
+        Args: { user_email?: string; user_uuid?: string }
+        Returns: Json
+      }
+      get_resume_limit: {
+        Args: { user_email?: string; user_uuid?: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
