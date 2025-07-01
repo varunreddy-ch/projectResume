@@ -27,8 +27,9 @@ export const useResumeUsage = () => {
 
       if (error) throw error;
       
-      setUsageData(data);
-      return data;
+      const typedData = data as UsageResult;
+      setUsageData(typedData);
+      return typedData;
     } catch (error) {
       console.error('Error checking usage:', error);
       toast({
