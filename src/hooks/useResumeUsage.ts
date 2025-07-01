@@ -27,7 +27,8 @@ export const useResumeUsage = () => {
 
       if (error) throw error;
       
-      const typedData = data as UsageResult;
+      // Properly type the response data
+      const typedData = data as unknown as UsageResult;
       setUsageData(typedData);
       return typedData;
     } catch (error) {
