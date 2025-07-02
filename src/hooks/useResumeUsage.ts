@@ -25,10 +25,14 @@ export const useResumeUsage = () => {
         user_uuid: user?.id || null
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Usage check error:', error);
+        throw error;
+      }
       
       // Properly type the response data
       const typedData = data as unknown as UsageResult;
+      console.log('Usage data received:', typedData);
       setUsageData(typedData);
       return typedData;
     } catch (error) {
@@ -47,8 +51,17 @@ export const useResumeUsage = () => {
   const canGenerateResume = useCallback(async (): Promise<boolean> => {
     const usage = await checkUsage();
     
-    if (!usage) return false;
+    if (!usage) {
+      console.log('No usage data available, denying generation');
+      return false;
+    }
     
+    console.log('Checking generation eligibility:', {
+      can_generate: usage.can_generate,
+      current_usage: usage.current_usage,
+      daily_limit: usage.daily_limit
+    });
+
     if (!usage.can_generate) {
       const planType = user ? (usage.daily_limit === 50 ? 'Premium' : 'Free') : 'Anonymous';
       toast({

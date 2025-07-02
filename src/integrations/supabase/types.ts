@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       resume_usage: {
         Row: {
           count: number
@@ -34,6 +61,42 @@ export type Database = {
           date?: string
           email?: string | null
           id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      resumes: {
+        Row: {
+          content: Json
+          created_at: string
+          email: string | null
+          id: string
+          is_public: boolean | null
+          share_token: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_public?: boolean | null
+          share_token?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_public?: boolean | null
+          share_token?: string | null
+          title?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -87,6 +150,10 @@ export type Database = {
       get_resume_limit: {
         Args: { user_email?: string; user_uuid?: string }
         Returns: number
+      }
+      increment_resume_usage: {
+        Args: { user_email?: string; user_uuid?: string }
+        Returns: boolean
       }
     }
     Enums: {
