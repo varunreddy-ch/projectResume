@@ -15,6 +15,22 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isProcessing }) =
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const isValidFileType = (file: File) => {
+    const validTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png'
+    ];
+    
+    const validExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    
+    return validTypes.includes(file.type) || validExtensions.includes(fileExtension);
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -32,12 +48,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isProcessing }) =
     const files = Array.from(e.dataTransfer.files);
     const file = files[0];
     
-    if (file && (file.type === 'application/pdf' || file.type.startsWith('image/') || file.type.includes('document'))) {
+    if (file && isValidFileType(file)) {
+      console.log('Valid file dropped:', file.name, file.type);
       onFileUpload(file);
     } else {
       toast({
         title: "Invalid file type",
-        description: "Please upload a PDF, image, or document file.",
+        description: "Please upload a PDF, DOC, DOCX, or image file.",
         variant: "destructive"
       });
     }
@@ -46,7 +63,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isProcessing }) =
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onFileUpload(file);
+      if (isValidFileType(file)) {
+        console.log('Valid file selected:', file.name, file.type);
+        onFileUpload(file);
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a PDF, DOC, DOCX, or image file.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -67,7 +93,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isProcessing }) =
             <>
               <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
               <h3 className="text-lg font-semibold text-gray-700">Processing your resume...</h3>
-              <p className="text-gray-500">ChatGPT is generating your professional website</p>
+              <p className="text-gray-500">AI is generating your professional resume</p>
             </>
           ) : (
             <>
@@ -76,7 +102,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload, isProcessing }) =
               </div>
               <h3 className="text-lg font-semibold text-gray-700">Upload Your Resume</h3>
               <p className="text-gray-500 max-w-sm">
-                Drag and drop your resume here, or click to browse. Supports PDF, images, and document files.
+                Drag and drop your resume here, or click to browse. Supports PDF, DOC, DOCX, and image files.
               </p>
               <Button 
                 onClick={handleButtonClick}

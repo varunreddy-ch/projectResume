@@ -66,6 +66,8 @@ const UploadPage = () => {
   const navigate = useNavigate();
 
   const handleFileUpload = async (file: File) => {
+    console.log('File upload started:', file.name, file.type);
+    
     const canGenerate = await canGenerateResume();
     if (!canGenerate) {
       return;
@@ -87,13 +89,20 @@ const UploadPage = () => {
             content: mockResumeData
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
 
         // Increment usage after successful generation
-        await supabase.rpc('increment_resume_usage', {
+        const { error: usageError } = await supabase.rpc('increment_resume_usage', {
           user_email: user?.email || null,
           user_uuid: user?.id || null
         });
+
+        if (usageError) {
+          console.error('Usage increment error:', usageError);
+        }
 
         setResumeData(mockResumeData);
         setIsProcessing(false);
@@ -115,6 +124,7 @@ const UploadPage = () => {
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Manual form submitted:', manualInput);
     
     const canGenerate = await canGenerateResume();
     if (!canGenerate) {
@@ -137,18 +147,18 @@ const UploadPage = () => {
       ...mockResumeData,
       name: manualInput.name,
       email: manualInput.email,
-      phone: manualInput.phone,
+      phone: manualInput.phone || mockResumeData.phone,
       summary: manualInput.summary || mockResumeData.summary,
       // Parse experience and skills from text input
       experience: manualInput.experience ? 
-        manualInput.experience.split('\n').map((exp, index) => ({
+        manualInput.experience.split('\n').filter(exp => exp.trim()).map((exp, index) => ({
           company: `Company ${index + 1}`,
           position: "Position",
           duration: "Duration",
-          description: exp
+          description: exp.trim()
         })) : mockResumeData.experience,
       skills: manualInput.skills ? 
-        manualInput.skills.split(',').map(skill => skill.trim()) : 
+        manualInput.skills.split(',').map(skill => skill.trim()).filter(skill => skill) : 
         mockResumeData.skills
     };
 
@@ -164,13 +174,20 @@ const UploadPage = () => {
             content: customResumeData
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Database error:', error);
+          throw error;
+        }
 
         // Increment usage after successful generation
-        await supabase.rpc('increment_resume_usage', {
+        const { error: usageError } = await supabase.rpc('increment_resume_usage', {
           user_email: user?.email || null,
           user_uuid: user?.id || null
         });
+
+        if (usageError) {
+          console.error('Usage increment error:', usageError);
+        }
 
         setResumeData(customResumeData);
         setIsProcessing(false);
@@ -456,7 +473,7 @@ const UploadPage = () => {
                 >
                   <FileUp className="h-8 w-8" />
                   <span className="font-semibold">Upload Resume File</span>
-                  <span className="text-sm opacity-80">Upload your existing resume (PDF, DOC, etc.)</span>
+                  <span className="text-sm opacity-80">Upload your existing resume (PDF, DOCX, etc.)</span>
                 </Button>
                 <Button
                   onClick={() => setUseManualInput(true)}
