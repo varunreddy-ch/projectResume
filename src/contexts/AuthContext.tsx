@@ -1,12 +1,18 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+
+interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
+  session: any | null;
   signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -23,7 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     subscribed: boolean;
@@ -33,11 +39,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   const checkSubscription = async () => {
-    if (!session) return;
+    if (!user) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
+      const data = await apiClient.checkSubscription();
       setSubscriptionStatus(data);
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -45,87 +50,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Check subscription when user logs in
-        if (session?.user && event === 'SIGNED_IN') {
-          setTimeout(() => {
-            checkSubscription();
-          }, 0);
+    const checkCurrentUser = async () => {
+      try {
+        const userData = await apiClient.getCurrentUser();
+        if (userData) {
+          setUser(userData);
+          setSession({ user: userData });
+          await checkSubscription();
         }
+      } catch (error) {
+        console.error('Error checking current user:', error);
+      } finally {
+        setLoading(false);
       }
-    );
+    };
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      if (session?.user) {
-        setTimeout(() => {
-          checkSubscription();
-        }, 0);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkCurrentUser();
   }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          first_name: firstName,
-          last_name: lastName
-        }
-      }
-    });
-    
-    if (!error) {
+    try {
+      await apiClient.signUp(email, password, firstName, lastName);
+      
       toast({
         title: "Account created successfully!",
         description: "Please check your email to verify your account.",
       });
+      
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message } };
     }
-    
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (!error) {
+    try {
+      const data = await apiClient.signIn(email, password);
+      setUser(data.user);
+      setSession({ user: data.user });
+      
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
+      
+      await checkSubscription();
+      return { error: null };
+    } catch (error: any) {
+      return { error: { message: error.message } };
     }
-    
-    return { error };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
+    try {
+      await apiClient.signOut();
+      setUser(null);
+      setSession(null);
       setSubscriptionStatus(null);
+      
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
       });
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 

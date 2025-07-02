@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,21 +20,10 @@ export const useResumeUsage = () => {
   const checkUsage = useCallback(async (): Promise<UsageResult | null> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('check_resume_usage', {
-        user_email: user?.email || null,
-        user_uuid: user?.id || null
-      });
-
-      if (error) {
-        console.error('Usage check error:', error);
-        throw error;
-      }
-      
-      // Properly type the response data
-      const typedData = data as unknown as UsageResult;
-      console.log('Usage data received:', typedData);
-      setUsageData(typedData);
-      return typedData;
+      const data = await apiClient.checkResumeUsage();
+      console.log('Usage data received:', data);
+      setUsageData(data);
+      return data;
     } catch (error) {
       console.error('Error checking usage:', error);
       toast({
@@ -46,7 +35,7 @@ export const useResumeUsage = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, toast]);
+  }, [toast]);
 
   const canGenerateResume = useCallback(async (): Promise<boolean> => {
     const usage = await checkUsage();
