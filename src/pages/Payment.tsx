@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -98,7 +97,7 @@ const Payment = () => {
       buttonText: user ? "Current Plan" : "Sign Up Free",
       popular: false,
       current: !subscriptionStatus?.subscribed,
-      disabled: user
+      disabled: Boolean(user)
     },
     {
       id: "premium_monthly",

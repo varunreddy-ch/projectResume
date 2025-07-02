@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResumeUsage } from '@/hooks/useResumeUsage';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, FileText, Sparkles, User, CreditCard, LogOut } from 'lucide-react';
+import { ArrowLeft, FileUp, FileText, Sparkles, User, CreditCard, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import FileUpload from '@/components/FileUpload';
@@ -46,7 +46,7 @@ const mockResumeData = {
   ]
 };
 
-const Upload = () => {
+const UploadPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [resumeData, setResumeData] = useState(null);
   const [manualInput, setManualInput] = useState({
@@ -365,7 +365,7 @@ const Upload = () => {
               onClick={handleShare}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200 hover:scale-105"
             >
-              <Upload className="mr-2 h-4 w-4" />
+              <FileUp className="mr-2 h-4 w-4" />
               Share Resume
             </Button>
           </div>
@@ -431,13 +431,13 @@ const Upload = () => {
         </Button>
 
         {/* Usage Indicator */}
-        <div className="max-w-md mx-auto mb-8 animate-scale-in" style={{ animationDelay: '0.2s' }}>
+        <div className="max-w-md mx-auto mb-8 animate-scale-in">
           <UsageIndicator />
         </div>
 
         <div className="space-y-8">
           {/* Method Selection */}
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl animate-scale-in" style={{ animationDelay: '0.4s' }}>
+          <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl animate-scale-in">
             <CardHeader>
               <CardTitle className="text-center text-white text-2xl">
                 How would you like to create your resume?
@@ -454,7 +454,7 @@ const Upload = () => {
                       : "bg-white/10 border-white/20 text-white hover:bg-white/20"
                   }`}
                 >
-                  <Upload className="h-8 w-8" />
+                  <FileUp className="h-8 w-8" />
                   <span className="font-semibold">Upload Resume File</span>
                   <span className="text-sm opacity-80">Upload your existing resume (PDF, DOC, etc.)</span>
                 </Button>
@@ -589,4 +589,4 @@ const Upload = () => {
   );
 };
 
-export default Upload;
+export default UploadPage;
