@@ -1,4 +1,3 @@
-
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class ApiClient {
@@ -147,7 +146,7 @@ class ApiClient {
     });
   }
 
-  // Subscription methods
+  // Subscription methods - Fixed to return promises properly
   async checkSubscription() {
     return this.request('/subscription/status');
   }

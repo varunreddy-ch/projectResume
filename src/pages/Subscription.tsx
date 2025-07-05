@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Crown, Check } from 'lucide-react';
+import { Crown, Check } from 'lucide-react';
+import Navigation from '@/components/Navigation';
 
 const Subscription = () => {
   const { user, subscriptionStatus } = useAuth();
@@ -20,22 +21,10 @@ const Subscription = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Button
-            onClick={() => navigate('/')}
-            variant="ghost"
-            className="text-white hover:text-gray-300 hover:bg-white/10 transition-all duration-200"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </div>
+      <Navigation showBackButton={true} title="Subscription Management" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Subscription Management</h1>
           <p className="text-gray-300 text-lg">
             {subscriptionStatus?.subscribed 
               ? 'Manage your Premium subscription'

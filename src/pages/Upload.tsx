@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle } from 'lucide-react';
+import { Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResumeUsage } from '@/hooks/useResumeUsage';
 import FileUpload from '@/components/FileUpload';
-import UsageIndicator from '@/components/UsageIndicator';
+import Navigation from '@/components/Navigation';
 import { apiClient } from '@/lib/api';
 
 const UploadPage = () => {
@@ -42,12 +42,17 @@ const UploadPage = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchUserResumes();
+    // Redirect to auth if not logged in
+    if (!user) {
+      navigate('/auth');
+      return;
     }
-  }, [user]);
+    fetchUserResumes();
+  }, [user, navigate]);
 
   const fetchUserResumes = async () => {
+    if (!user) return;
+    
     try {
       setBackendError('');
       const resumes = await apiClient.getUserResumes();
@@ -198,23 +203,15 @@ const UploadPage = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button
-            onClick={() => navigate('/')}
-            variant="ghost"
-            className="text-white hover:text-gray-300 hover:bg-white/10 transition-all duration-200"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-          
-          <UsageIndicator />
-        </div>
+  if (!user) {
+    return null; // Will redirect to auth
+  }
 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900">
+      <Navigation showBackButton={true} title="AI Resume Generator" />
+
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
         {/* Backend Error Alert */}
         {backendError && (
           <Alert variant="destructive">
@@ -240,9 +237,6 @@ const UploadPage = () => {
               <Sparkles className="h-10 w-10 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-violet-200 to-purple-200 bg-clip-text text-transparent">
-            AI Resume Generator
-          </h1>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
             Upload your resume or use an existing one, then provide a job description to generate a tailored, ATS-optimized resume
           </p>

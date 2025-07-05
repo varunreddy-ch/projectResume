@@ -50,6 +50,17 @@ export const useResumeUsage = () => {
   }, [toast]);
 
   const canGenerateResume = useCallback(async (): Promise<boolean> => {
+    // Require sign up for any resume generation
+    if (!user) {
+      toast({
+        title: "Sign up required",
+        description: "Please sign up to generate resumes. Choose between Free (5 resumes/day) or Premium (50 resumes/day) plans.",
+        variant: "destructive",
+        duration: 5000
+      });
+      return false;
+    }
+
     const usage = await checkUsage();
     
     if (!usage) {
@@ -64,13 +75,11 @@ export const useResumeUsage = () => {
     });
 
     if (!usage.can_generate) {
-      const planType = user ? (usage.daily_limit === 50 ? 'Premium' : 'Free') : 'Anonymous';
+      const planType = usage.daily_limit === 50 ? 'Premium' : 'Free';
       toast({
         title: "Daily limit reached",
         description: `You've reached your daily limit of ${usage.daily_limit} resumes. ${
-          planType === 'Anonymous' ? 'Sign up to get 5 resumes per day!' :
-          planType === 'Free' ? 'Upgrade to Premium for 50 resumes per day!' :
-          'Try again tomorrow!'
+          planType === 'Free' ? 'Upgrade to Premium for 50 resumes per day!' : 'Try again tomorrow!'
         }`,
         variant: "destructive",
         duration: 5000

@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Crown, Check, Loader2 } from 'lucide-react';
+import { Crown, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
+import Navigation from '@/components/Navigation';
 
 const Payment = () => {
   const { user, subscriptionStatus, checkSubscription } = useAuth();
@@ -43,23 +44,16 @@ const Payment = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      <div className="bg-white/10 backdrop-blur-sm border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Button
-            onClick={() => navigate('/')}
-            variant="ghost"
-            className="text-white hover:text-gray-300 hover:bg-white/10 transition-all duration-200"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
-        </div>
-      </div>
+      <Navigation showBackButton={true} title="Choose Your Plan" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Choose Your Plan</h1>
-          <p className="text-gray-300 text-lg">Upgrade to Premium for unlimited resume generation</p>
+          <p className="text-gray-300 text-lg">
+            {subscriptionStatus?.subscribed 
+              ? 'Manage your Premium subscription'
+              : 'Both plans require sign up - choose the one that fits your needs'
+            }
+          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -71,6 +65,7 @@ const Payment = () => {
                 <span className="text-4xl font-bold text-white">$0</span>
                 <span className="text-gray-300">/month</span>
               </div>
+              <p className="text-center text-sm text-gray-400">Requires sign up</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -86,12 +81,16 @@ const Payment = () => {
                   <Check className="mr-2 h-4 w-4 text-green-400" />
                   PDF download
                 </div>
+                <div className="flex items-center text-white">
+                  <Check className="mr-2 h-4 w-4 text-green-400" />
+                  Job description tailoring
+                </div>
               </div>
               <Button 
-                disabled
-                className="w-full bg-gray-600 cursor-not-allowed"
+                disabled={subscriptionStatus?.subscribed}
+                className={subscriptionStatus?.subscribed ? "w-full bg-gray-600 cursor-not-allowed" : "w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"}
               >
-                Current Plan
+                {subscriptionStatus?.subscribed ? 'Current Plan' : 'Current Plan'}
               </Button>
             </CardContent>
           </Card>
@@ -112,6 +111,7 @@ const Payment = () => {
                 <span className="text-4xl font-bold text-white">$9.99</span>
                 <span className="text-gray-300">/month</span>
               </div>
+              <p className="text-center text-sm text-gray-400">Requires sign up</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -129,6 +129,10 @@ const Payment = () => {
                 </div>
                 <div className="flex items-center text-white">
                   <Check className="mr-2 h-4 w-4 text-green-400" />
+                  Job description tailoring
+                </div>
+                <div className="flex items-center text-white">
+                  <Check className="mr-2 h-4 w-4 text-green-400" />
                   Priority support
                 </div>
                 <div className="flex items-center text-white">
@@ -138,7 +142,7 @@ const Payment = () => {
               </div>
               <Button
                 onClick={handleUpgrade}
-                disabled={loading}
+                disabled={loading || subscriptionStatus?.subscribed}
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
               >
                 {loading ? (
@@ -146,6 +150,8 @@ const Payment = () => {
                     <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Processing...</span>
                   </div>
+                ) : subscriptionStatus?.subscribed ? (
+                  'Current Plan'
                 ) : (
                   <div className="flex items-center space-x-2">
                     <Crown className="h-4 w-4" />
@@ -165,7 +171,7 @@ const Payment = () => {
                 <p className="text-gray-300">
                   {subscriptionStatus.subscribed 
                     ? `Premium subscription active until ${new Date(subscriptionStatus.subscription_end!).toLocaleDateString()}`
-                    : 'Free plan active'
+                    : 'Free plan active - 5 resumes per day'
                   }
                 </p>
               </CardContent>
