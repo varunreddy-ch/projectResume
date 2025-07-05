@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle, Upload } from 'lucide-react';
+import { Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ const UploadPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { canGenerateResume, usageData } = useResumeUsage();
+  const resumeRef = useRef<HTMLDivElement>(null);
 
   // Manual form state
   const [manualData, setManualData] = useState({
@@ -203,6 +204,75 @@ const UploadPage = () => {
     }
   };
 
+  const handleDownloadResume = () => {
+    if (!resumeRef.current) return;
+
+    // Create a new window with just the resume content
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const resumeContent = resumeRef.current.innerHTML;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Resume</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              background: white;
+              color: black;
+            }
+            .space-y-6 > * + * { margin-top: 1.5rem; }
+            .text-center { text-align: center; }
+            .border-b { border-bottom: 1px solid #e5e7eb; }
+            .pb-4 { padding-bottom: 1rem; }
+            .mb-4 { margin-bottom: 1rem; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .mt-2 { margin-top: 0.5rem; }
+            .mt-1 { margin-top: 0.25rem; }
+            .space-x-4 > * + * { margin-left: 1rem; }
+            .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+            .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+            .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+            .font-bold { font-weight: 700; }
+            .font-semibold { font-weight: 600; }
+            .text-gray-800 { color: #1f2937; }
+            .text-gray-700 { color: #374151; }
+            .text-gray-600 { color: #4b5563; }
+            .text-blue-500 { color: #3b82f6; }
+            .border-l-2 { border-left: 2px solid #e5e7eb; }
+            .pl-4 { padding-left: 1rem; }
+            .space-y-4 > * + * { margin-top: 1rem; }
+            .space-y-2 > * + * { margin-top: 0.5rem; }
+            .space-y-3 > * + * { margin-top: 0.75rem; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .items-center { align-items: center; }
+            .items-start { align-items: flex-start; }
+            .flex-wrap { flex-wrap: wrap; }
+            .gap-2 { gap: 0.5rem; }
+            .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+            .bg-blue-100 { background-color: #dbeafe; }
+            .text-blue-800 { color: #1e40af; }
+            .rounded-full { border-radius: 9999px; }
+            .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+          </style>
+        </head>
+        <body>
+          ${resumeContent}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   if (!user) {
     return null; // Will redirect to auth
   }
@@ -229,7 +299,7 @@ const UploadPage = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-white text-center flex items-center justify-center">
                   <Sparkles className="mr-2 h-5 w-5 text-purple-400" />
-                  {usageData.daily_limit === 50 ? 'Premium Plan' : 'Free Plan'}
+                  Daily Usage
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
@@ -238,7 +308,9 @@ const UploadPage = () => {
                     <div className="text-2xl font-bold text-white">
                       {usageData.current_usage} / {usageData.daily_limit}
                     </div>
-                    <div className="text-sm text-gray-300">Daily Usage</div>
+                    <div className="text-sm text-gray-300">
+                      {usageData.daily_limit === 50 ? 'Premium Plan' : 'Free Plan'}
+                    </div>
                   </div>
                   
                   <div className="w-full bg-white/20 rounded-full h-2">
@@ -261,7 +333,7 @@ const UploadPage = () => {
                       <Button
                         onClick={() => navigate('/payment')}
                         size="sm"
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                       >
                         Upgrade to Premium for 50 resumes per day!
                       </Button>
@@ -331,7 +403,7 @@ const UploadPage = () => {
                         <Button
                           onClick={() => handleUseExistingResume(resume.id)}
                           size="sm"
-                          className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
+                          className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white"
                         >
                           Use This Resume
                         </Button>
@@ -468,7 +540,7 @@ const UploadPage = () => {
                     <Button
                       type="submit"
                       disabled={isProcessing}
-                      className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-200 hover:scale-105 shadow-lg"
+                      className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-200 hover:scale-105 shadow-lg text-white"
                     >
                       {isProcessing ? (
                         <div className="flex items-center space-x-2">
@@ -528,7 +600,7 @@ const UploadPage = () => {
                   <Button
                     type="submit"
                     disabled={isProcessing}
-                    className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-200"
+                    className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-200 text-white"
                   >
                     {isProcessing ? (
                       <div className="flex items-center space-x-2">
@@ -555,7 +627,7 @@ const UploadPage = () => {
               <CardTitle className="text-white text-center">Your Generated Resume</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-white p-8 rounded-lg shadow-lg text-black">
+              <div ref={resumeRef} className="bg-white p-8 rounded-lg shadow-lg text-black">
                 <div className="space-y-6">
                   <div className="text-center border-b pb-4">
                     <h1 className="text-3xl font-bold text-gray-800">{generatedResume.personalInfo?.name || 'Professional Resume'}</h1>
@@ -619,10 +691,11 @@ const UploadPage = () => {
               
               <div className="mt-6 flex justify-center space-x-4">
                 <Button
-                  onClick={() => window.print()}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                  onClick={handleDownloadResume}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white"
                 >
-                  Print Resume
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Resume
                 </Button>
                 <Button
                   onClick={() => {

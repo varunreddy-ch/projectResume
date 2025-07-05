@@ -3,14 +3,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, User, Crown, LogOut } from 'lucide-react';
+import { ArrowLeft, User, Crown, LogOut, Home } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import UsageIndicator from '@/components/UsageIndicator';
 
 interface NavigationProps {
   showBackButton?: boolean;
@@ -48,7 +47,15 @@ const Navigation = ({ showBackButton = false, backTo = '/', title }: NavigationP
           </div>
 
           <div className="flex items-center space-x-4">
-            {user && <UsageIndicator />}
+            {/* Home button for all pages */}
+            <Button
+              onClick={() => navigate('/')}
+              variant="ghost"
+              className="text-white hover:text-gray-300 hover:bg-white/10 transition-all duration-200"
+            >
+              <Home className="mr-2 h-4 w-4" />
+              Home
+            </Button>
             
             {user ? (
               <DropdownMenu>
@@ -66,9 +73,9 @@ const Navigation = ({ showBackButton = false, backTo = '/', title }: NavigationP
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/subscription')}>
+                  <DropdownMenuItem onClick={() => navigate('/payment')}>
                     <Crown className="mr-2 h-4 w-4" />
-                    {subscriptionStatus?.subscribed ? 'Manage Subscription' : 'Upgrade to Premium'}
+                    Plans
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -79,7 +86,7 @@ const Navigation = ({ showBackButton = false, backTo = '/', title }: NavigationP
             ) : (
               <Button
                 onClick={() => navigate('/auth')}
-                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700"
+                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white"
               >
                 Sign In
               </Button>

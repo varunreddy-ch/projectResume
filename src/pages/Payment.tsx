@@ -132,8 +132,8 @@ const Payment = () => {
                 disabled={subscriptionStatus && !subscriptionStatus.subscribed}
                 className={
                   subscriptionStatus && !subscriptionStatus.subscribed 
-                    ? "w-full bg-green-600 cursor-default" 
-                    : "w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    ? "w-full bg-green-600 cursor-default text-white" 
+                    : "w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
                 }
               >
                 {subscriptionStatus && !subscriptionStatus.subscribed ? 'Current Plan' : 'Get Started'}
@@ -196,8 +196,8 @@ const Payment = () => {
                 disabled={loading || subscriptionStatus?.subscribed}
                 className={
                   subscriptionStatus?.subscribed
-                    ? "w-full bg-green-600 cursor-default"
-                    : "w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    ? "w-full bg-green-600 cursor-default text-white"
+                    : "w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                 }
               >
                 {loading ? (
