@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle } from 'lucide-react';
+import { Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ const UploadPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { canGenerateResume } = useResumeUsage();
+  const { canGenerateResume, usageData } = useResumeUsage();
 
   // Manual form state
   const [manualData, setManualData] = useState({
@@ -209,104 +209,109 @@ const UploadPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-900 via-purple-900 to-indigo-900">
-      <Navigation showBackButton={true} title="AI Resume Generator" />
+      <Navigation showBackButton={true} title="Create Your Resume" />
 
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* Backend Error Alert */}
         {backendError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               <strong>Backend Connection Error:</strong> {backendError}
-              <br />
-              <br />
-              <strong>To fix this:</strong>
-              <ol className="list-decimal list-inside mt-2 space-y-1">
-                <li>Navigate to the 'backend' folder in your project</li>
-                <li>Run: <code className="bg-black/20 px-2 py-1 rounded">npm install</code></li>
-                <li>Start the server: <code className="bg-black/20 px-2 py-1 rounded">npm run dev</code></li>
-              </ol>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Main Content */}
-        <div className="text-center space-y-4">
+        {/* Usage Indicator Card */}
+        {usageData && (
           <div className="flex justify-center">
-            <div className="p-4 bg-gradient-to-r from-violet-500 to-purple-600 rounded-full shadow-lg hover:scale-110 transition-transform duration-300">
-              <Sparkles className="h-10 w-10 text-white" />
-            </div>
-          </div>
-          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-            Upload your resume or use an existing one, then provide a job description to generate a tailored, ATS-optimized resume
-          </p>
-        </div>
-
-        {/* Job Description Form */}
-        {showJobDescriptionForm && (
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
-            <CardHeader>
-              <CardTitle className="text-white text-center">Enter Job Description</CardTitle>
-              <p className="text-gray-300 text-center">
-                Paste the job description to tailor your resume specifically for this position
-              </p>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleJobDescriptionSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="jobDescription" className="text-white">Job Description</Label>
-                  <Textarea
-                    id="jobDescription"
-                    placeholder="Paste the job description here..."
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[200px]"
-                    rows={8}
-                    required
-                  />
-                </div>
-                <div className="flex space-x-4">
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setShowJobDescriptionForm(false);
-                      setJobDescription('');
-                      setSelectedResumeId('');
-                    }}
-                    variant="outline"
-                    className="flex-1 border-white/20 text-white hover:bg-white/10"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isProcessing}
-                    className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-200"
-                  >
-                    {isProcessing ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Generating Resume...</span>
-                      </div>
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl w-96">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-white text-center flex items-center justify-center">
+                  <Sparkles className="mr-2 h-5 w-5 text-purple-400" />
+                  {usageData.daily_limit === 50 ? 'Premium Plan' : 'Free Plan'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-white">
+                      {usageData.current_usage} / {usageData.daily_limit}
+                    </div>
+                    <div className="text-sm text-gray-300">Daily Usage</div>
+                  </div>
+                  
+                  <div className="w-full bg-white/20 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(usageData.current_usage / usageData.daily_limit) * 100}%` }}
+                    />
+                  </div>
+                  
+                  <div className="text-center">
+                    {usageData.remaining > 0 ? (
+                      <span className="text-sm text-gray-300">{usageData.remaining} remaining today</span>
                     ) : (
-                      <div className="flex items-center space-x-2">
-                        <Sparkles className="h-4 w-4" />
-                        <span>Generate Tailored Resume</span>
-                      </div>
+                      <span className="text-sm text-red-300">Daily limit reached</span>
                     )}
-                  </Button>
+                  </div>
+
+                  {usageData.daily_limit === 5 && (
+                    <div className="text-center">
+                      <Button
+                        onClick={() => navigate('/payment')}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                      >
+                        Upgrade to Premium for 50 resumes per day!
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
-        {/* Options when not showing job description form */}
-        {!showJobDescriptionForm && (
+        {/* Main Content */}
+        {!showJobDescriptionForm && !resumeGenerated && (
           <>
+            {/* How would you like to create your resume section */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white mb-4">How would you like to create your resume?</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              <Card 
+                className={`bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl cursor-pointer transition-all duration-200 hover:scale-105 ${!showManualForm ? 'ring-2 ring-blue-500' : ''}`}
+                onClick={() => setShowManualForm(false)}
+              >
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full w-fit">
+                    <FileText className="h-8 w-8 text-white" />
+                  </div>
+                  <CardTitle className="text-white text-xl">Upload Resume File</CardTitle>
+                  <p className="text-gray-300">Upload your existing resume (PDF, DOCX, etc.)</p>
+                </CardHeader>
+              </Card>
+
+              <Card 
+                className={`bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl cursor-pointer transition-all duration-200 hover:scale-105 ${showManualForm ? 'ring-2 ring-blue-500' : ''}`}
+                onClick={() => setShowManualForm(true)}
+              >
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-4 p-4 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full w-fit">
+                    <User className="h-8 w-8 text-white" />
+                  </div>
+                  <CardTitle className="text-white text-xl">Enter Information Manually</CardTitle>
+                  <p className="text-gray-300">Fill out a form with your details</p>
+                </CardHeader>
+              </Card>
+            </div>
+
             {/* Existing Resumes */}
-            {user && userResumes.length > 0 && (
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+            {userResumes.length > 0 && (
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl mb-8">
                 <CardHeader>
                   <CardTitle className="text-white text-center">Use Existing Resume</CardTitle>
                   <p className="text-gray-300 text-center">
@@ -316,7 +321,7 @@ const UploadPage = () => {
                 <CardContent>
                   <div className="grid gap-3">
                     {userResumes.map((resume) => (
-                      <div key={resume.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                      <div key={resume.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
                         <div>
                           <h4 className="text-white font-medium">{resume.title}</h4>
                           <p className="text-gray-400 text-sm">
@@ -337,35 +342,23 @@ const UploadPage = () => {
               </Card>
             )}
 
-            {/* Upload or Manual Input Toggle */}
-            <div className="flex justify-center space-x-4">
-              <Button
-                onClick={() => setShowManualForm(false)}
-                variant={!showManualForm ? "default" : "outline"}
-                className={!showManualForm 
-                  ? "bg-gradient-to-r from-violet-500 to-purple-600" 
-                  : "border-white/20 text-white hover:bg-white/10"
-                }
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                Upload Resume
-              </Button>
-              <Button
-                onClick={() => setShowManualForm(true)}
-                variant={showManualForm ? "default" : "outline"}
-                className={showManualForm 
-                  ? "bg-gradient-to-r from-violet-500 to-purple-600" 
-                  : "border-white/20 text-white hover:bg-white/10"
-                }
-              >
-                <User className="mr-2 h-4 w-4" />
-                Manual Entry
-              </Button>
-            </div>
-
-            {/* Content based on selection */}
+            {/* Upload or Manual Form */}
             {!showManualForm ? (
-              <FileUpload onFileUpload={handleFileUpload} isProcessing={isProcessing} />
+              <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+                <CardContent className="p-8">
+                  <div className="text-center space-y-6">
+                    <div className="mx-auto p-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full w-fit">
+                      <Upload className="h-12 w-12 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white mb-2">Upload Your Resume</h3>
+                      <p className="text-gray-300">Drag and drop your resume here, or click to browse.</p>
+                      <p className="text-gray-400 text-sm">Supports PDF, DOC, DOCX, and image files.</p>
+                    </div>
+                    <FileUpload onFileUpload={handleFileUpload} isProcessing={isProcessing} />
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
                 <CardHeader>
@@ -494,6 +487,65 @@ const UploadPage = () => {
               </Card>
             )}
           </>
+        )}
+
+        {/* Job Description Form */}
+        {showJobDescriptionForm && (
+          <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+            <CardHeader>
+              <CardTitle className="text-white text-center">Enter Job Description</CardTitle>
+              <p className="text-gray-300 text-center">
+                Paste the job description to tailor your resume specifically for this position
+              </p>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleJobDescriptionSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="jobDescription" className="text-white">Job Description</Label>
+                  <Textarea
+                    id="jobDescription"
+                    placeholder="Paste the job description here..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[200px]"
+                    rows={8}
+                    required
+                  />
+                </div>
+                <div className="flex space-x-4">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setShowJobDescriptionForm(false);
+                      setJobDescription('');
+                      setSelectedResumeId('');
+                    }}
+                    variant="outline"
+                    className="flex-1 border-white/20 text-white hover:bg-white/10"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isProcessing}
+                    className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 transition-all duration-200"
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Generating Resume...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <Sparkles className="h-4 w-4" />
+                        <span>Generate Tailored Resume</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
 
         {/* Resume Preview */}
