@@ -1,3 +1,4 @@
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class ApiClient {
@@ -15,17 +16,26 @@ class ApiClient {
       ...options.headers,
     };
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    try {
+      console.log(`Making request to: ${url}`);
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw new Error(error.message || 'Request failed');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `HTTP ${response.status}: ${response.statusText}` }));
+        throw new Error(error.message || `Request failed with status ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error(`API request failed for ${endpoint}:`, error);
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Unable to connect to server. Please make sure the backend is running on http://localhost:3001');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Auth methods
@@ -104,19 +114,29 @@ class ApiClient {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
-      headers: {
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-      },
-      body: formData,
-    });
+    try {
+      console.log(`Uploading file to: ${API_BASE_URL}/upload`);
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+        },
+        body: formData,
+      });
 
-    if (!response.ok) {
-      throw new Error('Upload failed');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: `Upload failed with status ${response.status}` }));
+        throw new Error(error.message || 'Upload failed');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('File upload failed:', error);
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Unable to connect to server. Please make sure the backend is running on http://localhost:3001');
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   // Profile methods

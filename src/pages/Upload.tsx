@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Sparkles, FileText, User, Mail, Phone, MapPin, Briefcase, GraduationCap, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResumeUsage } from '@/hooks/useResumeUsage';
@@ -22,6 +23,7 @@ const UploadPage = () => {
   const [selectedResumeId, setSelectedResumeId] = useState<string>('');
   const [jobDescription, setJobDescription] = useState('');
   const [userResumes, setUserResumes] = useState<any[]>([]);
+  const [backendError, setBackendError] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -47,24 +49,29 @@ const UploadPage = () => {
 
   const fetchUserResumes = async () => {
     try {
+      setBackendError('');
       const resumes = await apiClient.getUserResumes();
       setUserResumes(resumes || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching user resumes:', error);
+      if (error.message.includes('Unable to connect to server')) {
+        setBackendError('Backend server is not running. Please start the Node.js server on http://localhost:3001');
+      }
     }
   };
 
   const handleFileUpload = async (file: File) => {
-    const canGenerate = await canGenerateResume();
-    if (!canGenerate) {
-      return;
-    }
-
-    console.log('Starting file upload and processing...');
-    setIsProcessing(true);
-    setResumeGenerated(false);
-
     try {
+      setBackendError('');
+      const canGenerate = await canGenerateResume();
+      if (!canGenerate) {
+        return;
+      }
+
+      console.log('Starting file upload and processing...');
+      setIsProcessing(true);
+      setResumeGenerated(false);
+
       // Upload file first
       const uploadResponse = await apiClient.uploadFile(file);
       console.log('File uploaded successfully:', uploadResponse);
@@ -79,6 +86,9 @@ const UploadPage = () => {
       });
     } catch (error: any) {
       console.error('Resume upload failed:', error);
+      if (error.message.includes('Unable to connect to server')) {
+        setBackendError('Backend server is not running. Please start the Node.js server on http://localhost:3001');
+      }
       toast({
         title: "Resume Upload Failed",
         description: error.message || "Please try again later.",
@@ -101,16 +111,17 @@ const UploadPage = () => {
       return;
     }
 
-    const canGenerate = await canGenerateResume();
-    if (!canGenerate) {
-      return;
-    }
-
-    console.log('Starting resume generation with job description...');
-    setIsProcessing(true);
-    setResumeGenerated(false);
-
     try {
+      setBackendError('');
+      const canGenerate = await canGenerateResume();
+      if (!canGenerate) {
+        return;
+      }
+
+      console.log('Starting resume generation with job description...');
+      setIsProcessing(true);
+      setResumeGenerated(false);
+
       const resumeData = await apiClient.generateResumeWithJobDescription({
         resumeId: selectedResumeId,
         jobDescription: jobDescription.trim()
@@ -127,6 +138,9 @@ const UploadPage = () => {
       });
     } catch (error: any) {
       console.error('Resume generation failed:', error);
+      if (error.message.includes('Unable to connect to server')) {
+        setBackendError('Backend server is not running. Please start the Node.js server on http://localhost:3001');
+      }
       toast({
         title: "Resume Generation Failed",
         description: error.message || "Please try again later.",
@@ -145,16 +159,17 @@ const UploadPage = () => {
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const canGenerate = await canGenerateResume();
-    if (!canGenerate) {
-      return;
-    }
-
-    console.log('Starting manual resume generation...');
-    setIsProcessing(true);
-    setResumeGenerated(false);
-
     try {
+      setBackendError('');
+      const canGenerate = await canGenerateResume();
+      if (!canGenerate) {
+        return;
+      }
+
+      console.log('Starting manual resume generation...');
+      setIsProcessing(true);
+      setResumeGenerated(false);
+
       const resumeData = await apiClient.generateResume({
         type: 'manual',
         data: manualData
@@ -170,6 +185,9 @@ const UploadPage = () => {
       });
     } catch (error: any) {
       console.error('Manual resume generation failed:', error);
+      if (error.message.includes('Unable to connect to server')) {
+        setBackendError('Backend server is not running. Please start the Node.js server on http://localhost:3001');
+      }
       toast({
         title: "Resume Generation Failed",
         description: error.message || "Please try again later.",
@@ -196,6 +214,24 @@ const UploadPage = () => {
           
           <UsageIndicator />
         </div>
+
+        {/* Backend Error Alert */}
+        {backendError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Backend Connection Error:</strong> {backendError}
+              <br />
+              <br />
+              <strong>To fix this:</strong>
+              <ol className="list-decimal list-inside mt-2 space-y-1">
+                <li>Navigate to the 'backend' folder in your project</li>
+                <li>Run: <code className="bg-black/20 px-2 py-1 rounded">npm install</code></li>
+                <li>Start the server: <code className="bg-black/20 px-2 py-1 rounded">npm run dev</code></li>
+              </ol>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Main Content */}
         <div className="text-center space-y-4">
@@ -373,34 +409,6 @@ const UploadPage = () => {
                           onChange={(e) => setManualData({...manualData, email: e.target.value})}
                           className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                           required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-white flex items-center">
-                          <Phone className="mr-2 h-4 w-4" />
-                          Phone
-                        </Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="(555) 123-4567"
-                          value={manualData.phone}
-                          onChange={(e) => setManualData({...manualData, phone: e.target.value})}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location" className="text-white flex items-center">
-                          <MapPin className="mr-2 h-4 w-4" />
-                          Location
-                        </Label>
-                        <Input
-                          id="location"
-                          type="text"
-                          placeholder="City, State"
-                          value={manualData.location}
-                          onChange={(e) => setManualData({...manualData, location: e.target.value})}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                         />
                       </div>
                     </div>

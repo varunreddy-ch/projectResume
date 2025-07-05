@@ -9,6 +9,7 @@ interface UsageResult {
   current_usage: number;
   daily_limit: number;
   remaining: number;
+  subscribed?: boolean;
 }
 
 export const useResumeUsage = () => {
@@ -24,13 +25,24 @@ export const useResumeUsage = () => {
       console.log('Usage data received:', data);
       setUsageData(data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking usage:', error);
-      toast({
-        title: "Error checking usage",
-        description: "Please try again later.",
-        variant: "destructive"
-      });
+      
+      // Show user-friendly error message
+      if (error.message.includes('Unable to connect to server')) {
+        toast({
+          title: "Backend Server Not Running",
+          description: "Please start the Node.js backend server on http://localhost:3001",
+          variant: "destructive",
+          duration: 10000
+        });
+      } else {
+        toast({
+          title: "Error checking usage",
+          description: error.message || "Please try again later.",
+          variant: "destructive"
+        });
+      }
       return null;
     } finally {
       setLoading(false);
