@@ -1,4 +1,3 @@
-
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class ApiClient {
@@ -80,6 +79,27 @@ class ApiClient {
     });
   }
 
+  async generateResumeWithJobDescription(data: { resumeId: string; jobDescription: string }) {
+    return this.request('/resumes/generate-with-job', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getUserResumes() {
+    return this.request('/resumes');
+  }
+
+  async getResume(id: string) {
+    return this.request(`/resumes/${id}`);
+  }
+
+  async deleteResume(id: string) {
+    return this.request(`/resumes/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async uploadFile(file: File) {
     const formData = new FormData();
     formData.append('file', file);
@@ -97,6 +117,14 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  // Profile methods
+  async updateProfile(data: { firstName: string; lastName: string }) {
+    return this.request('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   // Subscription methods

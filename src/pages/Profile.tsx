@@ -6,28 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Mail, Calendar, FileText, Crown, Save, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User, Mail, Calendar, FileText, Crown, Save, Edit, Trash2, ExternalLink, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
+import { Resume } from '@/types';
 import UsageIndicator from '@/components/UsageIndicator';
 
 interface Profile {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Resume {
-  id: string;
-  title: string;
-  content: any;
-  share_token: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
+  firstName: string | null;
+  lastName: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const Profile = () => {
@@ -41,6 +31,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -56,37 +47,18 @@ const Profile = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setProfile(data);
-        setFirstName(data.first_name || '');
-        setLastName(data.last_name || '');
-      } else {
-        // Create profile if it doesn't exist
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            first_name: user.user_metadata?.first_name || '',
-            last_name: user.user_metadata?.last_name || ''
-          })
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        setProfile(newProfile);
-        setFirstName(newProfile.first_name || '');
-        setLastName(newProfile.last_name || '');
-      }
+      // For now, use user data directly since we don't have a separate profile endpoint
+      const profileData = {
+        id: user.id,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      setProfile(profileData);
+      setFirstName(profileData.firstName || '');
+      setLastName(profileData.lastName || '');
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({
@@ -101,13 +73,7 @@ const Profile = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('resumes')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await apiClient.getUserResumes();
       setResumes(data || []);
     } catch (error) {
       console.error('Error fetching resumes:', error);
@@ -125,22 +91,13 @@ const Profile = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: firstName,
-          last_name: lastName,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
+      await apiClient.updateProfile({ firstName, lastName });
+      
       setProfile({
         ...profile,
-        first_name: firstName,
-        last_name: lastName,
-        updated_at: new Date().toISOString()
+        firstName,
+        lastName,
+        updatedAt: new Date().toISOString()
       });
 
       setIsEditing(false);
@@ -160,17 +117,36 @@ const Profile = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      await apiClient.uploadFile(file);
+      await fetchResumes(); // Refresh the resumes list
+      
+      toast({
+        title: "Resume uploaded successfully",
+        description: "Your resume has been added to your profile.",
+      });
+    } catch (error: any) {
+      console.error('Error uploading resume:', error);
+      toast({
+        title: "Error uploading resume",
+        description: error.message || "Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleDeleteResume = async (resumeId: string) => {
     try {
-      const { error } = await supabase
-        .from('resumes')
-        .delete()
-        .eq('id', resumeId)
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-
+      await apiClient.deleteResume(resumeId);
       setResumes(resumes.filter(resume => resume.id !== resumeId));
+      
       toast({
         title: "Resume deleted",
         description: "The resume has been successfully deleted.",
@@ -187,7 +163,7 @@ const Profile = () => {
 
   const handleShareResume = async (resume: Resume) => {
     try {
-      const shareUrl = `${window.location.origin}/resume/${resume.share_token}`;
+      const shareUrl = `${window.location.origin}/resume/${resume.id}`;
       await navigator.clipboard.writeText(shareUrl);
       
       toast({
@@ -240,20 +216,14 @@ const Profile = () => {
               <User className="h-12 w-12 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">
-              {profile?.first_name && profile?.last_name 
-                ? `${profile.first_name} ${profile.last_name}` 
+              {profile?.firstName && profile?.lastName 
+                ? `${profile.firstName} ${profile.lastName}` 
                 : 'Your Profile'}
             </h1>
             <p className="text-gray-300 flex items-center justify-center">
               <Mail className="mr-2 h-4 w-4" />
               {user.email}
             </p>
-            {profile?.created_at && (
-              <p className="text-gray-400 text-sm flex items-center justify-center mt-2">
-                <Calendar className="mr-2 h-4 w-4" />
-                Member since {new Date(profile.created_at).toLocaleDateString()}
-              </p>
-            )}
           </div>
 
           {/* Usage Overview */}
@@ -327,8 +297,8 @@ const Profile = () => {
                     <div>
                       <Label className="text-gray-300">Full Name</Label>
                       <p className="text-white text-lg">
-                        {profile?.first_name && profile?.last_name 
-                          ? `${profile.first_name} ${profile.last_name}` 
+                        {profile?.firstName && profile?.lastName 
+                          ? `${profile.firstName} ${profile.lastName}` 
                           : 'Not provided'}
                       </p>
                     </div>
@@ -354,47 +324,35 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Subscription Status */}
+            {/* Upload New Resume */}
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl animate-scale-in" style={{ animationDelay: '0.6s' }}>
               <CardHeader>
                 <CardTitle className="text-white flex items-center">
-                  <Crown className="mr-2 h-5 w-5" />
-                  Subscription Status
+                  <Upload className="mr-2 h-5 w-5" />
+                  Upload New Resume
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-gray-300">Current Plan</Label>
-                  <p className="text-white text-lg">
-                    {subscriptionStatus?.subscribed 
-                      ? `Premium (${subscriptionStatus.subscription_tier})` 
-                      : 'Free Plan'}
-                  </p>
+                <p className="text-gray-300">
+                  Add a new resume to your profile. Supported formats: PDF, DOC, DOCX.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="resume-upload" className="text-white">Choose Resume File</Label>
+                  <Input
+                    id="resume-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileUpload}
+                    disabled={uploading}
+                    className="bg-white/10 border-white/20 text-white file:bg-white/20 file:text-white file:border-0 file:rounded file:px-3 file:py-1"
+                  />
                 </div>
-                <div>
-                  <Label className="text-gray-300">Daily Resume Limit</Label>
-                  <p className="text-white text-lg">
-                    {subscriptionStatus?.subscribed ? '50' : '5'} resumes per day
-                  </p>
-                </div>
-                {subscriptionStatus?.subscription_end && (
-                  <div>
-                    <Label className="text-gray-300">
-                      {subscriptionStatus.subscribed ? 'Next Billing Date' : 'Trial Ends'}
-                    </Label>
-                    <p className="text-white text-lg">
-                      {new Date(subscriptionStatus.subscription_end).toLocaleDateString()}
-                    </p>
+                {uploading && (
+                  <div className="flex items-center space-x-2 text-white">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Uploading resume...</span>
                   </div>
                 )}
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={() => navigate('/payment')}
-                    className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                  >
-                    {subscriptionStatus?.subscribed ? 'Manage Plan' : 'Upgrade Plan'}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -410,7 +368,7 @@ const Profile = () => {
                 onClick={() => navigate('/upload')}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
               >
-                Create New Resume
+                Create Tailored Resume
               </Button>
             </CardHeader>
             <CardContent>
@@ -418,13 +376,22 @@ const Profile = () => {
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-white mb-2">No resumes yet</h3>
-                  <p className="text-gray-300 mb-6">Create your first professional resume to get started.</p>
-                  <Button
-                    onClick={() => navigate('/upload')}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                  >
-                    Create Your First Resume
-                  </Button>
+                  <p className="text-gray-300 mb-6">Upload your first resume or create a tailored one for specific jobs.</p>
+                  <div className="flex justify-center space-x-4">
+                    <Button
+                      onClick={() => document.getElementById('resume-upload')?.click()}
+                      variant="outline"
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    >
+                      Upload Resume
+                    </Button>
+                    <Button
+                      onClick={() => navigate('/upload')}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    >
+                      Create Tailored Resume
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -438,10 +405,10 @@ const Profile = () => {
                         <div className="flex-1">
                           <h4 className="text-white font-semibold">{resume.title}</h4>
                           <p className="text-gray-300 text-sm">
-                            Created on {new Date(resume.created_at).toLocaleDateString()}
+                            Created on {new Date(resume.createdAt).toLocaleDateString()}
                           </p>
                           <p className="text-gray-400 text-xs">
-                            Last updated {new Date(resume.updated_at).toLocaleDateString()}
+                            Last updated {new Date(resume.updatedAt).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="flex items-center space-x-2">
